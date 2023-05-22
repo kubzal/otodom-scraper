@@ -22,14 +22,14 @@ def get_offer_params(offer_url):
 
     results = dict()
 
-    price = soup.find("strong", {"aria-label": "Cena"})
-    results["price"] = unidecode.unidecode(price.text)
+    price = soup.find("strong", {"aria-label": "Cena"}).get_text()
+    results["price"] = unidecode.unidecode(price)
 
-    price_m2 = soup.find("div", {"aria-label": "Cena za metr kwadratowy"})
-    results["price_m2"] = unidecode.unidecode(price_m2.text)
+    price_m2 = soup.find("div", {"aria-label": "Cena za metr kwadratowy"}).get_text()
+    results["price_m2"] = unidecode.unidecode(price_m2)
 
-    address = soup.find("a", {"aria-label": "Adres"})
-    results["address"] = unidecode.unidecode(address.text)
+    address = soup.find("a", {"aria-label": "Adres"}).get_text()
+    results["address"] = unidecode.unidecode(address)
 
     for line in offer_params:
         k = unidecode.unidecode(
@@ -38,7 +38,7 @@ def get_offer_params(offer_url):
             .replace(" ", "_")
             .lower()
         )
-        v = unidecode.unidecode(str(line.text).strip())
+        v = unidecode.unidecode(str(line.get_text()).strip())
         results[k] = v
 
     return results
