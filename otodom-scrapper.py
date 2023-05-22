@@ -2,12 +2,14 @@ import sys
 import getopt
 
 import time
+import datetime
 import requests
 import json
 import unidecode
 
 import pandas as pd
 from bs4 import BeautifulSoup
+from sqlalchemy import create_engine
 
 
 # Pobieranie parametrów oferty
@@ -108,10 +110,30 @@ def main(argv):
         offers_listing = create_offers_table(get_offers_urls(arg_listing))
 
         df = pd.DataFrame(offers_listing)
+        df.insert(loc=0, column="create_timestamp", value=datetime.datetime.now())
 
         save_path = f"results_{int(time.time())}.csv"
         df.to_csv(save_path, index=False)
         print(f"Results saved into {save_path}")
+
+        # Get database credentials
+
+        f = open("database.txt", "r")
+        lines = f.readlines()
+
+        username = lines[0].replace("\n", "")
+        password = lines[1].replace("\n", "")
+        host = lines[2].replace("\n", "")
+        port = lines[3].replace("\n", "")
+        table = lines[4].replace("\n", "")
+        f.close()
+
+        engine = create_engine(
+            f"postgresql://{username}:{password}@{host}:{port}/{table}"
+            )
+
+        df.to_sql("otodom_offers_1", engine, if_exists="append", index=False)
+
     else:
         print("Can't get --listing arg")
 
