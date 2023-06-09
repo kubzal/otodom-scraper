@@ -79,7 +79,7 @@ def save_offers_params_to_db(df, credentials):
         f"postgresql://{credentials['username']}:{credentials['password']}"
         f"@{credentials['host']}:{credentials['port']}/{credentials['database']}"
     )
-    table_name = "otodom_offers_params_test1"
+    table_name = "otodom_offers_params"
 
     print(
         f"Saving {len(df.index)} rows into table: "
