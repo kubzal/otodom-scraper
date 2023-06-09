@@ -25,7 +25,7 @@ def crawler(driver, actions, url):
     """
     driver.get(url)  # open URL in Browser
 
-    ## Cookies
+    # Cookies
     try:
         print("Accepting cookies")
         driver.find_element(
@@ -41,37 +41,37 @@ def crawler(driver, actions, url):
 
     soup = BeautifulSoup(driver.page_source, "html.parser")  # get html
 
-    ## Find pages number
+    # Find pages number
     pages = soup.find_all("button", {"data-cy": re.compile("^pagination.go-to-page-")})
     pages_numbers = [int(x.get_text()) for x in pages]
     last_page_number = max(pages_numbers)
 
     print(f"Total pages: {last_page_number}")
 
-    for i in range(0, 5):  # last_page_number
+    for i in range(0, last_page_number):
         print(f"Current URL: {driver.current_url}")
 
-        ## Move to pagination button
+        # Move to pagination button
         pagination_button = driver.find_element(
             By.XPATH, "//*[@data-cy='pagination.next-page']"
         )
         actions.move_to_element(pagination_button).perform()
 
-        ## Get page source
+        # Get page source
         html = driver.page_source
 
-        ## Get offers ids
+        # Get offers ids
         offers_ids = get_offers_ids(html)
 
-        ## Creatinfg df with offers ids
+        # Creatinfg df with offers ids
         df = pd.DataFrame(offers_ids, columns=["offer_id"])
         df.insert(loc=0, column="create_timestamp", value=datetime.datetime.now())
         df.insert(loc=1, column="listing_url", value=driver.current_url)
 
-        ## Saving to DB
+        # Saving to DB
         save_df(df, get_creds(), csv=False, db=True)
 
-        ## Wait and go to the next page
+        # Wait and go to the next page
         time.sleep(10)
 
         if pagination_button.is_enabled():
@@ -105,13 +105,13 @@ def save_df(df, credentials, csv=True, db=True):
     """
     Saves otodom offer ids into CSV or/and DB table
     """
-    ## Save to CSV
+    # Save to CSV
     if csv:
         csv_path = f"results_{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}.csv"
         df.to_csv(csv_path, index=False)
         print(f"Results saved into {csv_path}")
 
-    ## Save to DB
+    # Save to DB
     if db:
         # Saving to PostgreSQL DB
         engine = create_engine(
@@ -119,9 +119,11 @@ def save_df(df, credentials, csv=True, db=True):
             f"@{credentials['host']}:{credentials['port']}/{credentials['database']}"
         )
 
-        table_name = "otodom_offers_ids_test1"
+        table_name = "otodom_offers_ids"
         df.to_sql(table_name, engine, if_exists="append", index=False)
-        print(f"Results saved to PostgreSQL DB into table: {credentials['database']}.{table_name}")
+        print(
+            f"Results saved to PostgreSQL DB into table: {credentials['database']}.{table_name}"
+        )
 
 
 def main(argv):

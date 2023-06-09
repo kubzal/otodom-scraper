@@ -13,6 +13,7 @@ from sqlalchemy import create_engine
 
 from utils import get_creds
 
+
 def get_offer_ids_from_db(credentials, dt=datetime.datetime.now().strftime("%Y-%m-%d")):
     """
     Connects with PostgreSQl DB and get offer ids for selected day
@@ -31,7 +32,6 @@ def get_offer_ids_from_db(credentials, dt=datetime.datetime.now().strftime("%Y-%
     select offer_id
     from public.otodom_offers_ids
     where date(create_timestamp) = '{dt}'
-    limit 27
     """
     cursor.execute(query)
     result = cursor.fetchall()
@@ -112,7 +112,7 @@ def get_offers_loop(offer_ids, bulk = 10):
 
 
 def main(argv):
-    arg_listing = ""
+    arg_date = ""
     arg_help = f"{argv[0]} -d <date>"
 
     try:
