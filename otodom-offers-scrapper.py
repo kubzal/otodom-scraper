@@ -88,24 +88,24 @@ def save_offers_params_to_db(df, credentials):
     df.to_sql(table_name, engine, if_exists="append", index=False)
 
 
-def get_offers_loop(offer_ids, bulk = 10):
+def get_offers_loop(offer_ids, bulk=10):
     results = list()
     for id in offer_ids:
         url = f"https://www.otodom.pl/pl/oferta/{id}"
-    
+
         offer = dict()
         offer["create_timestamp"] = datetime.datetime.now()
         offer["id"] = id
         offer = {**offer, **get_offer_params(url)}
-    
+
         results.append(offer)
         if len(results) == bulk:
             df = pd.DataFrame(results)
             save_offers_params_to_db(df, get_creds())
             results.clear()
-    
+
         time.sleep(2)
-    
+
     if len(results) < bulk and len(results) > 0:
         df = pd.DataFrame(results)
         save_offers_params_to_db(df, get_creds())
