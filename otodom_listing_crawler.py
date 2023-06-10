@@ -1,18 +1,15 @@
-import sys
-import getopt
-
 import datetime
+import getopt
 import re
+import sys
 import time
 
 import pandas as pd
 from bs4 import BeautifulSoup
-
 from selenium import webdriver
 from selenium.common.exceptions import NoSuchElementException
 from selenium.webdriver.common.action_chains import ActionChains
 from selenium.webdriver.common.by import By
-
 from sqlalchemy import create_engine
 
 from utils import get_creds

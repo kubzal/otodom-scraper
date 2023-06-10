@@ -1,7 +1,7 @@
-import sys
-import getopt
-
 import datetime
+import getopt
+import logging
+import sys
 import time
 
 import pandas as pd
@@ -13,8 +13,23 @@ from sqlalchemy import create_engine
 
 from utils import get_creds
 
+LOG_TIMESTAMP = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+LOG_FILENAME = f"scrapper_{LOG_TIMESTAMP}.log"
+LOG_FORMAT = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 
-def get_offer_ids_from_db(credentials, dt=datetime.datetime.now().strftime("%Y-%m-%d")):
+CURRENT_DATE = datetime.datetime.now().strftime("%Y-%m-%d")
+
+logging.basicConfig(
+    format=LOG_FORMAT,
+    handlers=[logging.FileHandler(LOG_FILENAME), logging.StreamHandler()],
+    encoding="utf-8",
+    level=logging.WARNING,
+)
+
+logger = logging.getLogger("otodom_offers_scrapper")
+
+
+def get_offer_ids_from_db(credentials, dt=CURRENT_DATE):
     """
     Connects with PostgreSQl DB and get offer ids for selected day
     """
@@ -88,27 +103,33 @@ def save_offers_params_to_db(df, credentials):
     df.to_sql(table_name, engine, if_exists="append", index=False)
 
 
-def get_offers_loop(offer_ids, bulk=10):
+def create_offers_df(offer_ids, wait=1):
+    """
+    Get offers params using get_offer_params() for offers
+    from offer_ids list and prepare pandas data frame with
+    them.
+    """
     results = list()
     for id in offer_ids:
         url = f"https://www.otodom.pl/pl/oferta/{id}"
 
+        try:
+            offer_params = get_offer_params(url)
+        except AttributeError:
+            logger.warning(f"Broken url: {url}")
+            pass
+
         offer = dict()
         offer["create_timestamp"] = datetime.datetime.now()
         offer["id"] = id
-        offer = {**offer, **get_offer_params(url)}
-
+        offer = {**offer, **offer_params}
         results.append(offer)
-        if len(results) == bulk:
-            df = pd.DataFrame(results)
-            save_offers_params_to_db(df, get_creds())
-            results.clear()
 
-        time.sleep(2)
+        time.sleep(wait)
 
-    if len(results) < bulk and len(results) > 0:
-        df = pd.DataFrame(results)
-        save_offers_params_to_db(df, get_creds())
+    df = pd.DataFrame(results)
+
+    return df
 
 
 def main(argv):
@@ -131,7 +152,8 @@ def main(argv):
     # Wykonanie
     if len(arg_date) > 0:
         offer_ids = get_offer_ids_from_db(get_creds(), arg_date)
-        get_offers_loop(offer_ids)
+        df = create_offers_df(offer_ids)
+        save_offers_params_to_db(df, get_creds())
     else:
         print("Can't get --date arg")
 
