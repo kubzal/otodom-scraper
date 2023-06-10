@@ -18,7 +18,7 @@ Option `--date` gets offers ids from PostgreSQL database for specified date, and
 
 Below there is an example how to use it.
 ```
-python otodom_offers_scrapper.py --date 2023-06-09"
+python otodom_offers_scrapper.py --date 2023-06-09
 ```
 
 Option `--url` gets offer params for the offer from URL.

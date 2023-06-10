@@ -16,7 +16,7 @@ from utils import get_creds
 APP_NAME = "otodom_offers_scrapper"
 
 LOG_TIMESTAMP = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
-LOG_FILENAME = f"scrapper_{LOG_TIMESTAMP}.log"
+LOG_FILENAME = f"logs/scrapper_{LOG_TIMESTAMP}.log"
 LOG_FORMAT = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 
 CURRENT_DATE = datetime.datetime.now().strftime("%Y-%m-%d")

@@ -18,7 +18,7 @@ from utils import get_creds
 APP_NAME = "otodom_listing_crawler"
 
 LOG_TIMESTAMP = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
-LOG_FILENAME = f"crawler_{LOG_TIMESTAMP}.log"
+LOG_FILENAME = f"logs/crawler_{LOG_TIMESTAMP}.log"
 LOG_FORMAT = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 
 CURRENT_DATE = datetime.datetime.now().strftime("%Y-%m-%d")
