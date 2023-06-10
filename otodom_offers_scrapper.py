@@ -1,29 +1,36 @@
 import argparse
 import datetime
 import logging
+import os
 import sys
 import time
 
 import pandas as pd
-import psycopg2
 import requests
 import unidecode
 from bs4 import BeautifulSoup
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, text
 
 from utils import get_creds
 
 APP_NAME = "otodom_offers_scrapper"
 
 LOG_TIMESTAMP = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
-LOG_FILENAME = f"logs/scrapper_{LOG_TIMESTAMP}.log"
+LOG_DIR = "logs"
+LOG_PATH = f"{LOG_DIR}/{APP_NAME}_{LOG_TIMESTAMP}.log"
 LOG_FORMAT = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 
 CURRENT_DATE = datetime.datetime.now().strftime("%Y-%m-%d")
 
+# Create logs directory if does not exist
+try:
+    os.makedirs(LOG_DIR)
+except FileExistsError:
+    pass
+
 logging.basicConfig(
     format=LOG_FORMAT,
-    handlers=[logging.FileHandler(LOG_FILENAME), logging.StreamHandler()],
+    handlers=[logging.FileHandler(LOG_PATH), logging.StreamHandler()],
     encoding="utf-8",
     level=logging.INFO,
 )
@@ -35,30 +42,28 @@ def get_offer_ids_from_db(credentials, dt=CURRENT_DATE):
     """
     Connects with PostgreSQl DB and get offer ids for selected day
     """
-    conn = psycopg2.connect(
-        database=credentials["database"],
-        user=credentials["username"],
-        password=credentials["password"],
-        host=credentials["host"],
-        port=credentials["port"],
+
+    engine = create_engine(
+        f"postgresql://{credentials['username']}:{credentials['password']}"
+        f"@{credentials['host']}:{credentials['port']}/{credentials['database']}"
     )
 
     logger.info("Getting offers from database")
 
-    cursor = conn.cursor()
+    # cursor = conn.cursor()
 
     query = f"""
     select offer_id
     from public.otodom_offers_ids
     where date(create_timestamp) = '{dt}'
     """
-    cursor.execute(query)
-    result = cursor.fetchall()
-    conn.close()
 
-    offer_ids = [item[0] for item in result]
+    with engine.connect() as conn:
+        result = conn.execute(text(query))
+    
+        offer_ids = [item[0] for item in result]
 
-    logger.info(f"{len(offer_ids)} offers in database for {dt}: ")
+    logger.info(f"{len(offer_ids)} offers in database for {dt}")
 
     return offer_ids
 

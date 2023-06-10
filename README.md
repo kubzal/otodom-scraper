@@ -22,10 +22,9 @@ Finally install the requirements.
 pip install -r requirements.txt
 ```
 
-
 Right now `otodom-scraper` consists of two scripts.
 
-## Saving offers ids
+## _otodom_listing_crawler_
 Gets otodom listing URL, crawl through all pages of that listing and gets offers ids. After that all offers ids are saved into table on PostgreSQL database. Offer id looks like `przestronne-3-pokoje-m-57m2-cicha-zielona-okolica-ID4lL7J` and it is a part of offer URL. By injecting it after `https://www.otodom.pl/pl/oferta/` we get offer URL.
 
 ```
@@ -37,7 +36,7 @@ Below there is an example how to run that script locally.
 ```
 python otodom_listing_crawler.py --listing "https://www.otodom.pl/pl/oferty/sprzedaz/mieszkanie/bialystok?distanceRadius=0&locations=%5Bcities_6-204%5D&viewType=listing"
 ```
-## Saving offers params
+## _otodom_offers_scrapper_
 Option `--date` gets offers ids from PostgreSQL database for specified date, and gets offer params and save them into another table in database.
 
 Below there is an example how to use it.

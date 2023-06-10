@@ -1,6 +1,7 @@
 import argparse
 import datetime
 import logging
+import os
 import re
 import sys
 import time
@@ -18,14 +19,21 @@ from utils import get_creds
 APP_NAME = "otodom_listing_crawler"
 
 LOG_TIMESTAMP = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
-LOG_FILENAME = f"logs/crawler_{LOG_TIMESTAMP}.log"
+LOG_DIR = "logs"
+LOG_PATH = f"{LOG_DIR}/{APP_NAME}_{LOG_TIMESTAMP}.log"
 LOG_FORMAT = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 
 CURRENT_DATE = datetime.datetime.now().strftime("%Y-%m-%d")
 
+# Create logs directory if does not exist
+try:
+    os.makedirs(LOG_DIR)
+except FileExistsError:
+    pass
+
 logging.basicConfig(
     format=LOG_FORMAT,
-    handlers=[logging.FileHandler(LOG_FILENAME), logging.StreamHandler()],
+    handlers=[logging.FileHandler(LOG_PATH), logging.StreamHandler()],
     encoding="utf-8",
     level=logging.INFO,
 )
