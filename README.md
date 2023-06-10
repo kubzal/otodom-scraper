@@ -13,6 +13,10 @@ Then enter the directory and create virtual environment.
 cd otodom-scrapper
 python -m venv env
 ```
+Then activate virual environment. 
+```
+source env/bin/activate
+```
 Finally install the requirements.
 ```
 pip install -r requirements.txt
