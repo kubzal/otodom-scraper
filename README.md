@@ -14,9 +14,16 @@ Below there is an example how to run that script locally.
 python otodom_listing_crawler.py --listing "https://www.otodom.pl/pl/oferty/sprzedaz/mieszkanie/bialystok?distanceRadius=0&locations=%5Bcities_6-204%5D&viewType=listing"
 ```
 ## Saving offers params
-Gets offers ids from PostgreSQL database for specified date, and gets offer params and save them into another table in database.
+Option `--date` gets offers ids from PostgreSQL database for specified date, and gets offer params and save them into another table in database.
 
-Below there is an example how to run that script locally.
+Below there is an example how to use it.
 ```
-python otodom_offers_scrapper.py --date 2023-06-09
+python otodom_offers_scrapper.py --date 2023-06-09"
+```
+
+Option `--url` gets offer params for the offer from URL.
+
+Below there is an example how to use it.
+```
+python otodom_offers_scrapper.py --url "https://www.otodom.pl/pl/oferta/penthouse-z-tarasem-na-zoliborzu-ul-rydygiera-ID4lKUX"
 ```

@@ -1,5 +1,5 @@
-import argparse
 import datetime
+import getopt
 import logging
 import sys
 import time
@@ -13,8 +13,6 @@ from sqlalchemy import create_engine
 
 from utils import get_creds
 
-APP_NAME = "otodom_offers_scrapper"
-
 LOG_TIMESTAMP = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
 LOG_FILENAME = f"scrapper_{LOG_TIMESTAMP}.log"
 LOG_FORMAT = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
@@ -25,10 +23,10 @@ logging.basicConfig(
     format=LOG_FORMAT,
     handlers=[logging.FileHandler(LOG_FILENAME), logging.StreamHandler()],
     encoding="utf-8",
-    level=logging.INFO,
+    level=logging.WARNING,
 )
 
-logger = logging.getLogger(APP_NAME)
+logger = logging.getLogger("otodom_offers_scrapper")
 
 
 def get_offer_ids_from_db(credentials, dt=CURRENT_DATE):
@@ -55,9 +53,6 @@ def get_offer_ids_from_db(credentials, dt=CURRENT_DATE):
     conn.close()
 
     offer_ids = [item[0] for item in result]
-
-    logger.info(f"Results for {dt}: {len(offer_ids)}")
-
     return offer_ids
 
 
@@ -101,7 +96,7 @@ def save_offers_params_to_db(df, credentials):
     )
     table_name = "otodom_offers_params"
 
-    logger.info(
+    print(
         f"Saving {len(df.index)} rows into table: "
         f"{credentials['database']}.{table_name}"
     )
@@ -121,7 +116,7 @@ def create_offers_df(offer_ids, wait=1):
         try:
             offer_params = get_offer_params(url)
         except AttributeError:
-            logger.warning(f"Broken URL: {url}")
+            logger.warning(f"Broken url: {url}")
             pass
 
         offer = dict()
@@ -137,43 +132,30 @@ def create_offers_df(offer_ids, wait=1):
     return df
 
 
-def validate_date(date_text):
-    try:
-        datetime.date.fromisoformat(date_text)
-        return True
-    except ValueError:
-        logger.error("Incorrect date format, should be YYYY-MM-DD")
-
-
 def main(argv):
-    logger.info(f"Starting {APP_NAME}")
+    arg_date = ""
+    arg_help = f"{argv[0]} -d <date>"
 
-    parser = argparse.ArgumentParser()
+    try:
+        opts, args = getopt.getopt(argv[1:], "hl:", ["help", "date="])
+    except:
+        print(f"Except: {arg_help}")
+        sys.exit(2)
 
-    group = parser.add_mutually_exclusive_group(required=True)
-    group.add_argument("--date", help="extract date from database")
-    group.add_argument("--url", help="otodom offer URL")
-    args = parser.parse_args()
+    for opt, arg in opts:
+        if opt in ("-h", "--help"):
+            print(arg_help)  # print the help message
+            sys.exit(2)
+        elif opt in ("-d", "--date"):
+            arg_date = arg
 
-    if args.date and validate_date(args.date):
-        logger.info(f"[date] {args.date}")
-
-        offer_ids = get_offer_ids_from_db(get_creds(), args.date)
+    # Wykonanie
+    if len(arg_date) > 0:
+        offer_ids = get_offer_ids_from_db(get_creds(), arg_date)
         df = create_offers_df(offer_ids)
         save_offers_params_to_db(df, get_creds())
-
-    if args.url:
-        logger.info(f"[url] {args.url}")
-        try:
-            offer_params = get_offer_params(args.url)
-
-            for key, value in offer_params.items():
-                print(f"{key}: {value}")
-
-        except AttributeError:
-            logger.error(f"Incorrect otodom offer URL: {args.url}")
-
-    logger.info(f"{APP_NAME} finished")
+    else:
+        print("Can't get --date arg")
 
 
 if __name__ == "__main__":

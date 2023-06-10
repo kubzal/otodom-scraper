@@ -1,6 +1,5 @@
-import argparse
-import logging
 import datetime
+import getopt
 import re
 import sys
 import time
@@ -15,23 +14,6 @@ from sqlalchemy import create_engine
 
 from utils import get_creds
 
-APP_NAME = "otodom_listing_crawler"
-
-LOG_TIMESTAMP = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
-LOG_FILENAME = f"crawler_{LOG_TIMESTAMP}.log"
-LOG_FORMAT = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
-
-CURRENT_DATE = datetime.datetime.now().strftime("%Y-%m-%d")
-
-logging.basicConfig(
-    format=LOG_FORMAT,
-    handlers=[logging.FileHandler(LOG_FILENAME), logging.StreamHandler()],
-    encoding="utf-8",
-    level=logging.INFO,
-)
-
-logger = logging.getLogger(APP_NAME)
-
 
 def crawler(driver, actions, url, wait=5):
     """
@@ -42,12 +24,12 @@ def crawler(driver, actions, url, wait=5):
 
     # Cookies
     try:
-        logger.info("Accepting cookies")
+        print("Accepting cookies")
         driver.find_element(
             By.ID, "onetrust-accept-btn-handler"
         ).click()  # accept cookies
     except NoSuchElementException:
-        logger.info("Cookies already accepted")
+        print("Cookies already accepted")
 
     pagination_button = driver.find_element(
         By.XPATH, "//*[@data-cy='pagination.next-page']"
@@ -61,10 +43,10 @@ def crawler(driver, actions, url, wait=5):
     pages_numbers = [int(x.get_text()) for x in pages]
     last_page_number = max(pages_numbers)
 
-    logger.info(f"Total pages: {last_page_number}")
+    print(f"Total pages: {last_page_number}")
 
     for i in range(0, last_page_number):
-        logger.info(f"Current URL: {driver.current_url}")
+        print(f"Current URL: {driver.current_url}")
 
         # Move to pagination button
         pagination_button = driver.find_element(
@@ -124,7 +106,7 @@ def save_df(df, credentials, csv=True, db=True):
     if csv:
         csv_path = f"results_{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}.csv"
         df.to_csv(csv_path, index=False)
-        logger.info(f"Results saved into {csv_path}")
+        print(f"Results saved into {csv_path}")
 
     # Save to DB
     if db:
@@ -136,31 +118,39 @@ def save_df(df, credentials, csv=True, db=True):
 
         table_name = "otodom_offers_ids"
         df.to_sql(table_name, engine, if_exists="append", index=False)
-        logger.info(
+        print(
             f"Results saved to PostgreSQL DB into table: {credentials['database']}.{table_name}"
         )
 
 
 def main(argv):
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--listing", help="otodom listing URL", required=True)
-    parser.add_argument("--wait", help="wait time between listing pages in seconds")
-    args = parser.parse_args()
+    arg_listing = ""
+    help_message = f"{argv[0]} --listing | -l <otodom_listing>"
 
-    logger.info(f"Starting {APP_NAME}")
-    if args.listing:
-        logger.info(f"[listing] {args.listing}")
+    try:
+        opts, args = getopt.getopt(argv[1:], "hl:", ["help", "listing="])
+    except getopt.GetoptError as err:
+        print(f"{err} \nOptions: {help_message}")
+        sys.exit(2)
+
+    for opt, arg in opts:
+        if opt in ("-h", "--help"):
+            print(help_message)  # print the help message
+            sys.exit(2)
+        elif opt in ("-l", "--listing"):
+            arg_listing = arg
+
+    # Wykonanie
+    if len(arg_listing) > 0:
+        print(f"otodom_listing: {arg_listing}")
+
         driver = webdriver.Chrome()
         actions = ActionChains(driver)
 
-        if args.wait and isinstance(int(args.wait), int):
-            logger.info(f"Wait between listing pages {args.wait}s")
-            crawler(driver, actions, args.listing, wait=int(args.wait))
-        else:
-            logger.info("Default wait time between listing pages")
-            crawler(driver, actions, args.listing)
-    
-    logger.info(f"{APP_NAME} finished")
+        crawler(driver, actions, arg_listing)
+
+    else:
+        print("Can't get --listing arg")
 
 
 if __name__ == "__main__":
