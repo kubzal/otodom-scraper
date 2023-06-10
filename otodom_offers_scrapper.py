@@ -43,6 +43,8 @@ def get_offer_ids_from_db(credentials, dt=CURRENT_DATE):
         port=credentials["port"],
     )
 
+    logger.info("Getting offers from database")
+
     cursor = conn.cursor()
 
     query = f"""
@@ -56,7 +58,7 @@ def get_offer_ids_from_db(credentials, dt=CURRENT_DATE):
 
     offer_ids = [item[0] for item in result]
 
-    logger.info(f"Results for {dt}: {len(offer_ids)}")
+    logger.info(f"{len(offer_ids)} offers in database for {dt}: ")
 
     return offer_ids
 
