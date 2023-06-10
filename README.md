@@ -1,4 +1,24 @@
 # otodom-scrapper
+Welcome to `otodom-scrapper`!
+
+## Installation
+Recommended Python version is 3.9.10.
+
+First clone the repository.
+```
+git clone git@github.com:kubzal/otodom-scrapper.git
+```
+Then enter the directory and create virtual environment. 
+```
+cd otodom-scrapper
+python -m venv env
+```
+Finally install the requirements.
+```
+pip install -r requirements.txt
+```
+
+
 Right now `otodom-scraper` consists of two scripts.
 
 ## Saving offers ids
