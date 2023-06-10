@@ -1,6 +1,6 @@
 import argparse
-import logging
 import datetime
+import logging
 import re
 import sys
 import time
@@ -159,7 +159,7 @@ def main(argv):
         else:
             logger.info("Default wait time between listing pages")
             crawler(driver, actions, args.listing)
-    
+
     logger.info(f"{APP_NAME} finished")
 
 
