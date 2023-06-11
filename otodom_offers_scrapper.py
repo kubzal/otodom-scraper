@@ -15,30 +15,8 @@ from utils import get_creds
 
 APP_NAME = "otodom_offers_scrapper"
 
-LOG_TIMESTAMP = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
-LOG_DIR = "logs"
-LOG_PATH = f"{LOG_DIR}/{APP_NAME}_{LOG_TIMESTAMP}.log"
-LOG_FORMAT = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 
-CURRENT_DATE = datetime.datetime.now().strftime("%Y-%m-%d")
-
-# Create logs directory if does not exist
-try:
-    os.makedirs(LOG_DIR)
-except FileExistsError:
-    pass
-
-logging.basicConfig(
-    format=LOG_FORMAT,
-    handlers=[logging.FileHandler(LOG_PATH), logging.StreamHandler()],
-    encoding="utf-8",
-    level=logging.INFO,
-)
-
-logger = logging.getLogger(APP_NAME)
-
-
-def get_offer_ids_from_db(credentials, dt=CURRENT_DATE):
+def get_offer_ids_from_db(logger, credentials, dt):
     """
     Connects with PostgreSQl DB and get offer ids for selected day
     """
@@ -57,8 +35,7 @@ def get_offer_ids_from_db(credentials, dt=CURRENT_DATE):
     """
 
     with engine.connect() as conn:
-        result = conn.execute(text(query))
-    
+        result = conn.execute(text(query)) 
         offer_ids = [item[0] for item in result]
 
     logger.info(f"{len(offer_ids)} offers in database for {dt}")
@@ -99,50 +76,60 @@ def get_offer_params(offer_url):
     return results
 
 
-def save_offers_params_to_db(df, credentials):
-    engine = create_engine(
-        f"postgresql://{credentials['username']}:{credentials['password']}"
-        f"@{credentials['host']}:{credentials['port']}/{credentials['database']}"
-    )
-    table_name = "otodom_offers_params"
+def save_offers_params_to_db(logger, df, credentials, dry_run=False):
+    if dry_run is False:
+        engine = create_engine(
+            f"postgresql://{credentials['username']}:{credentials['password']}"
+            f"@{credentials['host']}:{credentials['port']}/{credentials['database']}"
+        )
+        table_name = "otodom_offers_params"
 
-    logger.info(
-        f"Saving {len(df.index)} rows into table: "
-        f"{credentials['database']}.{table_name}"
-    )
-    df.to_sql(table_name, engine, if_exists="append", index=False)
+        logger.info(
+            f"Saving {len(df.index)} rows into table: "
+            f"{credentials['database']}.{table_name}"
+        )
+        df.to_sql(table_name, engine, if_exists="append", index=False)
+    else:
+        logger.info("Dry run, results not saved")
 
 
-def create_offers_df(offer_ids, wait=1):
+def create_offers_df(logger, offer_ids, wait, dry_run):
     """
     Get offers params using get_offer_params() for offers
     from offer_ids list and prepare pandas data frame with
     them.
     """
-    results = list()
-    for id in offer_ids:
-        url = f"https://www.otodom.pl/pl/oferta/{id}"
+    offer_ids_count = len(offer_ids)
+    runtime_timedelta = datetime.timedelta(seconds=(offer_ids_count * wait))
+    logger.info(f"Estimated runtime {runtime_timedelta}")
 
-        try:
-            offer_params = get_offer_params(url)
-        except AttributeError:
-            logger.warning(f"Broken URL: {url}")
-            pass
+    if dry_run is False:
+        results = list()
+        for id in offer_ids:
+            url = f"https://www.otodom.pl/pl/oferta/{id}"
 
-        offer = dict()
-        offer["create_timestamp"] = datetime.datetime.now()
-        offer["id"] = id
-        offer = {**offer, **offer_params}
-        results.append(offer)
+            try:
+                offer_params = get_offer_params(url)
+            except AttributeError:
+                logger.warning(f"Broken URL: {url}")
+                pass
 
-        time.sleep(wait)
+            offer = dict()
+            offer["create_timestamp"] = datetime.datetime.now()
+            offer["id"] = id
+            offer = {**offer, **offer_params}
+            results.append(offer)
 
-    df = pd.DataFrame(results)
+            time.sleep(wait)
+
+        df = pd.DataFrame(results)
+    else:
+        df = pd.DataFrame()
 
     return df
 
 
-def validate_date(date_text):
+def validate_date(logger, date_text):
     try:
         datetime.date.fromisoformat(date_text)
         return True
@@ -151,32 +138,66 @@ def validate_date(date_text):
 
 
 def main(argv):
-    logger.info(f"Starting {APP_NAME}")
-
     parser = argparse.ArgumentParser()
-
     group = parser.add_mutually_exclusive_group(required=True)
     group.add_argument("--date", help="extract date from database")
     group.add_argument("--url", help="otodom offer URL")
+    parser.add_argument("--wait", help="wait")
+    parser.add_argument("--dry_run", help="dry run", nargs="?", const=True, type=bool)
     args = parser.parse_args()
 
-    if args.date and validate_date(args.date):
+    log_timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+    log_dir = "logs"
+    log_path = f"{log_dir}/{APP_NAME}_{log_timestamp}.log"
+    log_format = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+
+    # Create logs directory if does not exist
+    try:
+        os.makedirs(log_dir)
+    except FileExistsError:
+        pass
+
+    logging.basicConfig(
+        format=log_format,
+        handlers=[logging.FileHandler(log_path), logging.StreamHandler()],
+        encoding="utf-8",
+        level=logging.INFO,
+    )
+
+    logger = logging.getLogger(APP_NAME)
+    logger.info(f"Starting {APP_NAME}")
+
+    if args.wait is not None:
+        wait = int(args.wait)
+    else:
+        wait = 1
+
+    logger.info(f"Wait between offers {wait}s")
+
+    if args.dry_run is None:
+        dry_run = False
+    else:
+        dry_run = args.dry_run
+        logger.info(f"Dry run {dry_run}")
+
+    if args.date and validate_date(logger, args.date):
         logger.info(f"[date] {args.date}")
 
-        offer_ids = get_offer_ids_from_db(get_creds(), args.date)
-        df = create_offers_df(offer_ids)
-        save_offers_params_to_db(df, get_creds())
+        offer_ids = get_offer_ids_from_db(logger, get_creds(), args.date)
+        df = create_offers_df(logger, offer_ids, wait, dry_run)
+        save_offers_params_to_db(logger, df, get_creds(), dry_run)
 
     if args.url:
-        logger.info(f"[url] {args.url}")
+        url = args.url
+        logger.info(f"[url] {url}")
         try:
-            offer_params = get_offer_params(args.url)
+            offer_params = get_offer_params(url)
 
             for key, value in offer_params.items():
                 print(f"{key}: {value}")
 
         except AttributeError:
-            logger.error(f"Incorrect otodom offer URL: {args.url}")
+            logger.error(f"Incorrect otodom offer URL: {url}")
 
     logger.info(f"{APP_NAME} finished")
 

@@ -39,7 +39,7 @@ python otodom_listing_crawler.py --listing "https://www.otodom.pl/pl/oferty/sprz
 
 Possible options
 ```
-python otodom_listing_crawler.py --listing LISTING [--wait SECONDS] --run local | server [--dry_run]
+python otodom_listing_crawler.py [-h] --listing LISTING [--wait SECONDS] --run local | server [--dry_run]
 ```
 
 ## _otodom_offers_scrapper_
@@ -55,4 +55,8 @@ Option `--url` gets offer params for the offer from URL.
 Below there is an example how to use it.
 ```
 python otodom_offers_scrapper.py --url "https://www.otodom.pl/pl/oferta/penthouse-z-tarasem-na-zoliborzu-ul-rydygiera-ID4lKUX"
+```
+Possible options
+```
+ otodom_offers_scrapper.py [-h] (--date DATE | --url URL) [--wait WAIT] [--dry_run]
 ```

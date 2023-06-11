@@ -190,6 +190,7 @@ def main(argv):
             dry_run = False
         else:
             dry_run = args.dry_run
+            logger.info(f"Dry run {dry_run}")
 
         if args.wait and isinstance(int(args.wait), int):
             wait = int(args.wait)
