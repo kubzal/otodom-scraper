@@ -34,8 +34,14 @@ offer_url = f"https://www.otodom.pl/pl/oferta/{offer_id}"
 
 Below there is an example how to run that script locally.
 ```
-python otodom_listing_crawler.py --listing "https://www.otodom.pl/pl/oferty/sprzedaz/mieszkanie/bialystok?distanceRadius=0&locations=%5Bcities_6-204%5D&viewType=listing"
+python otodom_listing_crawler.py --listing "https://www.otodom.pl/pl/oferty/sprzedaz/mieszkanie/bialystok?distanceRadius=0&locations=%5Bcities_6-204%5D&viewType=listing" --run local
 ```
+
+Possible options
+```
+python otodom_listing_crawler.py --listing LISTING [--wait SECONDS] --run local | server [--dry_run]
+```
+
 ## _otodom_offers_scrapper_
 Option `--date` gets offers ids from PostgreSQL database for specified date, and gets offer params and save them into another table in database.
 
