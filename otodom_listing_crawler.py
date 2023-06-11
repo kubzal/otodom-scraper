@@ -10,6 +10,8 @@ import pandas as pd
 from bs4 import BeautifulSoup
 from selenium import webdriver
 from selenium.common.exceptions import NoSuchElementException
+from selenium.webdriver.chrome.options import Options
+from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.common.action_chains import ActionChains
 from selenium.webdriver.common.by import By
 from sqlalchemy import create_engine
@@ -17,31 +19,10 @@ from sqlalchemy import create_engine
 from utils import get_creds
 
 APP_NAME = "otodom_listing_crawler"
-
-LOG_TIMESTAMP = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
-LOG_DIR = "logs"
-LOG_PATH = f"{LOG_DIR}/{APP_NAME}_{LOG_TIMESTAMP}.log"
-LOG_FORMAT = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
-
-CURRENT_DATE = datetime.datetime.now().strftime("%Y-%m-%d")
-
-# Create logs directory if does not exist
-try:
-    os.makedirs(LOG_DIR)
-except FileExistsError:
-    pass
-
-logging.basicConfig(
-    format=LOG_FORMAT,
-    handlers=[logging.FileHandler(LOG_PATH), logging.StreamHandler()],
-    encoding="utf-8",
-    level=logging.INFO,
-)
-
-logger = logging.getLogger(APP_NAME)
+CHROMEDRIVER_PATH = "/usr/local/bin/chromedriver"
 
 
-def crawler(driver, actions, url, wait=5):
+def crawler(logger, driver, actions, url, wait=5, dry_run=False):
     """
     Crawls otodom listing to do some actions and
     use pagination till its end
@@ -67,40 +48,44 @@ def crawler(driver, actions, url, wait=5):
     # Find pages number
     pages = soup.find_all("button", {"data-cy": re.compile("^pagination.go-to-page-")})
     pages_numbers = [int(x.get_text()) for x in pages]
-    last_page_number = max(pages_numbers)
+    total_pages_number = max(pages_numbers)
 
-    logger.info(f"Total pages: {last_page_number}")
+    logger.info(f"Total pages: {total_pages_number}")
 
-    for i in range(0, last_page_number):
-        logger.info(f"Current URL: {driver.current_url}")
+    runtime_timedelta = datetime.timedelta(seconds=(total_pages_number * wait))
+    logger.info(f"Estimated runtime {runtime_timedelta}")
 
-        # Move to pagination button
-        pagination_button = driver.find_element(
-            By.XPATH, "//*[@data-cy='pagination.next-page']"
-        )
-        actions.move_to_element(pagination_button).perform()
+    if dry_run is False:
+        for i in range(0, total_pages_number):
+            logger.info(f"Current URL: {driver.current_url}")
 
-        # Get page source
-        html = driver.page_source
+            # Move to pagination button
+            pagination_button = driver.find_element(
+                By.XPATH, "//*[@data-cy='pagination.next-page']"
+            )
+            actions.move_to_element(pagination_button).perform()
 
-        # Get offers ids
-        offers_ids = get_offers_ids(html)
+            # Get page source
+            html = driver.page_source
 
-        # Creatinfg df with offers ids
-        df = pd.DataFrame(offers_ids, columns=["offer_id"])
-        df.insert(loc=0, column="create_timestamp", value=datetime.datetime.now())
-        df.insert(loc=1, column="listing_url", value=driver.current_url)
+            # Get offers ids
+            offers_ids = get_offers_ids(html)
 
-        # Saving to DB
-        save_df(df, get_creds(), csv=False, db=True)
+            # Creatinfg df with offers ids
+            df = pd.DataFrame(offers_ids, columns=["offer_id"])
+            df.insert(loc=0, column="create_timestamp", value=datetime.datetime.now())
+            df.insert(loc=1, column="listing_url", value=driver.current_url)
 
-        # Wait and go to the next page
-        time.sleep(wait)
+            # Saving to DB
+            save_df(logger, df, get_creds(), csv=False, db=True)
 
-        if pagination_button.is_enabled():
-            pagination_button.click()
-        else:
-            break
+            # Wait and go to the next page
+            time.sleep(wait)
+
+            if pagination_button.is_enabled():
+                pagination_button.click()
+            else:
+                break
 
 
 def get_offers_ids(page_source):
@@ -124,7 +109,7 @@ def get_offers_ids(page_source):
     return offer_urls
 
 
-def save_df(df, credentials, csv=True, db=True):
+def save_df(logger, df, credentials, csv=True, db=True):
     """
     Saves otodom offer ids into CSV or/and DB table
     """
@@ -153,20 +138,79 @@ def main(argv):
     parser = argparse.ArgumentParser()
     parser.add_argument("--listing", help="otodom listing URL", required=True)
     parser.add_argument("--wait", help="wait time between listing pages in seconds")
+    parser.add_argument(
+        "--run", help="local/server", nargs="?", const="local", type=str, required=True
+    )
+    parser.add_argument("--dry_run", help="dry run", nargs="?", const=True, type=bool)
     args = parser.parse_args()
 
-    logger.info(f"Starting {APP_NAME}")
+    run_type = args.run
+
+    log_timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+    log_dir = "logs"
+    log_path = f"{log_dir}/{APP_NAME}_{run_type}_{log_timestamp}.log"
+    log_format = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+
+    # Create logs directory if does not exist
+    try:
+        os.makedirs(log_dir)
+    except FileExistsError:
+        pass
+
+    logging.basicConfig(
+        format=log_format,
+        handlers=[logging.FileHandler(log_path), logging.StreamHandler()],
+        encoding="utf-8",
+        level=logging.INFO,
+    )
+
+    logger = logging.getLogger(APP_NAME)
+
+    logger.info(f"Starting {APP_NAME} run {run_type}")
     if args.listing:
-        logger.info(f"[listing] {args.listing}")
-        driver = webdriver.Chrome()
+        listing_url = args.listing
+        logger.info(f"[listing] {listing_url}")
+
+        if args.run == "local":
+            driver = webdriver.Chrome()
+
+        if args.run == "server":
+            service = Service(CHROMEDRIVER_PATH)
+
+            options = Options()
+            options.add_argument("--headless")
+            options.add_argument("--window-size=%s" % "1920,1080")
+            options.add_argument("--no-sandbox")
+
+            driver = webdriver.Chrome(service=service, options=options)
+
         actions = ActionChains(driver)
 
+        if args.dry_run is None:
+            dry_run = False
+        else:
+            dry_run = args.dry_run
+
         if args.wait and isinstance(int(args.wait), int):
+            wait = int(args.wait)
             logger.info(f"Wait between listing pages {args.wait}s")
-            crawler(driver, actions, args.listing, wait=int(args.wait))
+            crawler(
+                logger=logger,
+                driver=driver,
+                actions=actions,
+                url=listing_url,
+                wait=wait,
+                dry_run=dry_run,
+            )
         else:
             logger.info("Default wait time between listing pages")
-            crawler(driver, actions, args.listing)
+            crawler(
+                logger=logger,
+                driver=driver,
+                actions=actions,
+                url=listing_url,
+                dry_run=dry_run,
+            )
 
     logger.info(f"{APP_NAME} finished")
 
