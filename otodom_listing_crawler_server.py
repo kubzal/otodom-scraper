@@ -10,7 +10,7 @@ import pandas as pd
 from bs4 import BeautifulSoup
 from selenium import webdriver
 from selenium.common.exceptions import NoSuchElementException
-# from selenium.webdriver.chrome.options import Options
+from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.common.action_chains import ActionChains
 from selenium.webdriver.common.by import By
@@ -28,11 +28,6 @@ LOG_FORMAT = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 CURRENT_DATE = datetime.datetime.now().strftime("%Y-%m-%d")
 
 CHROMEDRIVER_PATH = "/usr/local/bin/chromedriver"
-# WINDOW_SIZE = "1920,1080"
-# chrome_options = Options()
-# chrome_options.add_argument("--headless")
-# chrome_options.add_argument("--window-size=%s" % WINDOW_SIZE)
-# chrome_options.add_argument("--no-sandbox")
 
 # Create logs directory if does not exist
 try:
@@ -169,7 +164,13 @@ def main(argv):
         logger.info(f"[listing] {args.listing}")
 
         service = Service(CHROMEDRIVER_PATH)
-        driver = webdriver.Chrome(service=service)
+
+        options = Options()
+        options.add_argument("--headless")
+        options.add_argument("--window-size=%s" % "1920,1080")
+        options.add_argument("--no-sandbox")
+
+        driver = webdriver.Chrome(service=service, options=options)
 
         actions = ActionChains(driver)
 
