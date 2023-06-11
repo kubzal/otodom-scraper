@@ -50,8 +50,6 @@ def get_offer_ids_from_db(credentials, dt=CURRENT_DATE):
 
     logger.info("Getting offers from database")
 
-    # cursor = conn.cursor()
-
     query = f"""
     select offer_id
     from public.otodom_offers_ids
