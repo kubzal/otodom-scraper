@@ -166,7 +166,6 @@ def main(argv):
     logger.info(f"Starting {APP_NAME}")
     if args.listing:
         logger.info(f"[listing] {args.listing}")
-        driver = webdriver.Chrome()
         driver = webdriver.Chrome(
             executable_path=CHROMEDRIVER_PATH, chrome_options=chrome_options
         )
