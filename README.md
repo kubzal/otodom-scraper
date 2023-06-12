@@ -37,9 +37,19 @@ Below there is an example how to run that script locally.
 python otodom_listing_crawler.py --listing "https://www.otodom.pl/pl/oferty/sprzedaz/mieszkanie/bialystok?distanceRadius=0&locations=%5Bcities_6-204%5D&viewType=listing" --run local
 ```
 
+You can also read listings from text file.
+```
+python otodom_listing_crawler.py --file listings.txt --run local
+```
+
+You can also dry run script to estimate how long it would take and to check if listings URLs are correct.
+```
+python otodom_listing_crawler.py --file listings.txt --run local --dry_run
+```
+
 Possible options
 ```
-python otodom_listing_crawler.py [-h] --listing LISTING [--wait SECONDS] --run local | server [--dry_run]
+otodom_listing_crawler.py [-h] (--listing LISTING | --file FILE) [--wait WAIT] --run [local | server] [--dry_run]
 ```
 
 ## _otodom_offers_scrapper_
@@ -48,6 +58,11 @@ Option `--date` gets offers ids from PostgreSQL database for specified date, and
 Below there is an example how to use it.
 ```
 python otodom_offers_scrapper.py --date 2023-06-09
+```
+
+You can also dry run script to estimate how long it would take.
+```
+python otodom_offers_scrapper.py --date 2023-06-09 --dry_run
 ```
 
 Option `--url` gets offer params for the offer from URL.
