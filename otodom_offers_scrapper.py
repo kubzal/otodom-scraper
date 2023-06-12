@@ -29,7 +29,7 @@ def get_offer_ids_from_db(logger, credentials, dt):
     logger.info("Getting offers from database")
 
     query = f"""
-    select offer_id
+    select distinct offer_id
     from public.otodom_offers_ids
     where date(create_timestamp) = '{dt}'
     """
