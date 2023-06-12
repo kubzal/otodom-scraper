@@ -134,9 +134,70 @@ def save_df(logger, df, credentials, csv=True, db=True):
         )
 
 
+def get_get_listings_from_file(logger, file_path):
+    """
+    Gets listings from file, remove new line symbol at the end of each line 
+    """
+    try:
+        with open(file_path) as f:
+            listings = f.readlines()
+            listings_without_n = [line.replace("\n", "") for line in listings]
+    except FileNotFoundError as err:
+        logger.error(err)
+
+    return listings_without_n
+
+
+def do_single_listing(logger, listing_url, run, wait, dry_run):
+    logger.info(f"[listing] {listing_url}")
+
+    if run == "local":
+        driver = webdriver.Chrome()
+
+    if run == "server":
+        service = Service(CHROMEDRIVER_PATH)
+
+        options = Options()
+        options.add_argument("--headless")
+        options.add_argument("--window-size=%s" % "1920,1080")
+        options.add_argument("--no-sandbox")
+
+        driver = webdriver.Chrome(service=service, options=options)
+
+    actions = ActionChains(driver)
+
+    if dry_run is None:
+        dry_run = False
+    else:
+        logger.info(f"Dry run {dry_run}")
+
+    if wait and isinstance(int(wait), int):
+        wait = int(wait)
+        logger.info(f"Wait between listing pages {wait}s")
+        crawler(
+            logger=logger,
+            driver=driver,
+            actions=actions,
+            url=listing_url,
+            wait=wait,
+            dry_run=dry_run,
+        )
+    else:
+        logger.info("Default wait time between listing pages")
+        crawler(
+            logger=logger,
+            driver=driver,
+            actions=actions,
+            url=listing_url,
+            dry_run=dry_run,
+        )
+
+
 def main(argv):
     parser = argparse.ArgumentParser()
-    parser.add_argument("--listing", help="otodom listing URL", required=True)
+    group = parser.add_mutually_exclusive_group(required=True)
+    group.add_argument("--listing", help="otodom listing URL")
+    group.add_argument("--file", help="file with otodom listing(s) URL(s)")
     parser.add_argument("--wait", help="wait time between listing pages in seconds")
     parser.add_argument(
         "--run", help="local/server", nargs="?", const="local", type=str, required=True
@@ -167,53 +228,28 @@ def main(argv):
     logger = logging.getLogger(APP_NAME)
 
     logger.info(f"Starting {APP_NAME} run {run_type}")
+
+    run = args.run
+    wait = args.wait
+    dry_run = args.dry_run
+
     if args.listing:
         listing_url = args.listing
-        logger.info(f"[listing] {listing_url}")
 
-        if args.run == "local":
-            driver = webdriver.Chrome()
+        do_single_listing(logger, listing_url, run, wait, dry_run)
 
-        if args.run == "server":
-            service = Service(CHROMEDRIVER_PATH)
+    if args.file:
+        listing_file = args.file
+        logger.info(f"[file] {listing_file}")
 
-            options = Options()
-            options.add_argument("--headless")
-            options.add_argument("--window-size=%s" % "1920,1080")
-            options.add_argument("--no-sandbox")
+        listings = get_get_listings_from_file(logger, listing_file)
+        listings_count = len(listings)
+        logger.info(f"{listings_count} listings found in file")
 
-            driver = webdriver.Chrome(service=service, options=options)
+        for listing_url in listings:
+            do_single_listing(logger, listing_url, run, wait, dry_run)
 
-        actions = ActionChains(driver)
-
-        if args.dry_run is None:
-            dry_run = False
-        else:
-            dry_run = args.dry_run
-            logger.info(f"Dry run {dry_run}")
-
-        if args.wait and isinstance(int(args.wait), int):
-            wait = int(args.wait)
-            logger.info(f"Wait between listing pages {args.wait}s")
-            crawler(
-                logger=logger,
-                driver=driver,
-                actions=actions,
-                url=listing_url,
-                wait=wait,
-                dry_run=dry_run,
-            )
-        else:
-            logger.info("Default wait time between listing pages")
-            crawler(
-                logger=logger,
-                driver=driver,
-                actions=actions,
-                url=listing_url,
-                dry_run=dry_run,
-            )
-
-    logger.info(f"{APP_NAME} finished")
+        logger.info(f"{APP_NAME} finished")
 
 
 if __name__ == "__main__":
