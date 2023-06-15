@@ -76,24 +76,21 @@ def get_offer_params(offer_url):
     return results
 
 
-def save_offers_params_to_db(logger, df, credentials, dry_run=False):
-    if dry_run is False:
-        engine = create_engine(
-            f"postgresql://{credentials['username']}:{credentials['password']}"
-            f"@{credentials['host']}:{credentials['port']}/{credentials['database']}"
-        )
-        table_name = "otodom_offers_params"
+def save_offers_params_to_db(logger, df, credentials):
+    engine = create_engine(
+        f"postgresql://{credentials['username']}:{credentials['password']}"
+        f"@{credentials['host']}:{credentials['port']}/{credentials['database']}"
+    )
+    table_name = "otodom_offers_params"
 
-        logger.info(
-            f"Saving {len(df.index)} rows into table: "
-            f"{credentials['database']}.{table_name}"
-        )
-        df.to_sql(table_name, engine, if_exists="append", index=False)
-    else:
-        logger.info("Dry run, results not saved")
+    logger.info(
+        f"Saving {len(df.index)} rows into table: "
+        f"{credentials['database']}.{table_name}"
+    )
+    df.to_sql(table_name, engine, if_exists="append", index=False)
 
 
-def create_offers_df(logger, offer_ids, wait, dry_run):
+def scrapper_loop(logger, offer_ids, wait, dry_run):
     """
     Get offers params using get_offer_params() for offers
     from offer_ids list and prepare pandas data frame with
@@ -105,7 +102,7 @@ def create_offers_df(logger, offer_ids, wait, dry_run):
 
     if dry_run is False:
         results = list()
-        for id in offer_ids:
+        for index, id in enumerate(offer_ids):
             url = f"https://www.otodom.pl/pl/oferta/{id}"
 
             try:
@@ -120,13 +117,24 @@ def create_offers_df(logger, offer_ids, wait, dry_run):
             offer = {**offer, **offer_params}
             results.append(offer)
 
+            logger_info_condition = (
+                (index > 0 and index % 150 == 0) or
+                (index > 0 and index == len(offer_ids)-1)
+            )
+            if logger_info_condition:
+                logger.info(f"{index+1} offers processed")
+
+            save_condition = (
+                (index > 0 and index % 1000 == 0) or
+                (index > 0 and index == len(offer_ids)-1)
+            )
+            if save_condition:
+                df = pd.DataFrame(results)
+                save_offers_params_to_db(logger, df, get_creds())
+                results.clear()
+                del df
+
             time.sleep(wait)
-
-        df = pd.DataFrame(results)
-    else:
-        df = pd.DataFrame()
-
-    return df
 
 
 def validate_date(logger, date_text):
@@ -184,8 +192,7 @@ def main(argv):
         logger.info(f"[date] {args.date}")
 
         offer_ids = get_offer_ids_from_db(logger, get_creds(), args.date)
-        df = create_offers_df(logger, offer_ids, wait, dry_run)
-        save_offers_params_to_db(logger, df, get_creds(), dry_run)
+        scrapper_loop(logger, offer_ids, wait, dry_run)
 
     if args.url:
         url = args.url

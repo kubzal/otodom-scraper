@@ -79,6 +79,8 @@ def crawler(logger, driver, actions, url, wait=5, dry_run=False):
             # Saving to DB
             save_df(logger, df, get_creds(), csv=False, db=True)
 
+            del offers_ids, df
+
             # Wait and go to the next page
             time.sleep(wait)
 
@@ -191,6 +193,8 @@ def do_single_listing(logger, listing_url, run, wait, dry_run):
             url=listing_url,
             dry_run=dry_run,
         )
+
+    del driver, actions
 
 
 def main(argv):

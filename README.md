@@ -24,7 +24,7 @@ pip install -r requirements.txt
 
 Right now `otodom-scraper` consists of two scripts.
 
-## _otodom_listing_crawler_
+## _otodom_listings_crawler_
 Gets otodom listing URL, crawl through all pages of that listing and gets offers ids. After that all offers ids are saved into table on PostgreSQL database. Offer id looks like `przestronne-3-pokoje-m-57m2-cicha-zielona-okolica-ID4lL7J` and it is a part of offer URL. By injecting it after `https://www.otodom.pl/pl/oferta/` we get offer URL.
 
 ```
@@ -34,22 +34,22 @@ offer_url = f"https://www.otodom.pl/pl/oferta/{offer_id}"
 
 Below there is an example how to run that script locally.
 ```
-python otodom_listing_crawler.py --listing "https://www.otodom.pl/pl/oferty/sprzedaz/mieszkanie/bialystok?distanceRadius=0&locations=%5Bcities_6-204%5D&viewType=listing" --run local
+python otodom_listings_crawler.py --listing "https://www.otodom.pl/pl/oferty/sprzedaz/mieszkanie/bialystok?distanceRadius=0&locations=%5Bcities_6-204%5D&viewType=listing" --run local
 ```
 
 You can also read listings from text file.
 ```
-python otodom_listing_crawler.py --file listings.txt --run local
+python otodom_listings_crawler.py --file listings.txt --run local
 ```
 
 You can also dry run script to estimate how long it would take and to check if listings URLs are correct.
 ```
-python otodom_listing_crawler.py --file listings.txt --run local --dry_run
+python otodom_listings_crawler.py --file listings.txt --run local --dry_run
 ```
 
 Possible options
 ```
-otodom_listing_crawler.py [-h] (--listing LISTING | --file FILE) [--wait WAIT] --run [local | server] [--dry_run]
+otodom_listings_crawler.py [-h] (--listing LISTING | --file FILE) [--wait WAIT] --run [local | server] [--dry_run]
 ```
 
 ## _otodom_offers_scrapper_
