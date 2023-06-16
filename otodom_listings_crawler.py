@@ -69,7 +69,7 @@ def crawler(logger, driver, actions, url, wait=5, dry_run=False):
             except TimeoutException as e:
                 logger.error(e)
                 logger.error(logger.error(traceback.format_exc()))
-                
+
                 time.sleep(30)
                 crawler(logger, driver, actions, driver.current_url, wait, dry_run)
 
