@@ -10,7 +10,7 @@ import traceback
 import pandas as pd
 from bs4 import BeautifulSoup
 from selenium import webdriver
-from selenium.common.exceptions import NoSuchElementException
+from selenium.common.exceptions import NoSuchElementException, TimeoutException
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.common.action_chains import ActionChains
@@ -64,7 +64,14 @@ def crawler(logger, driver, actions, url, wait=5, dry_run=False):
             pagination_button = driver.find_element(
                 By.XPATH, "//*[@data-cy='pagination.next-page']"
             )
-            actions.move_to_element(pagination_button).perform()
+            try:
+                actions.move_to_element(pagination_button).perform()
+            except TimeoutException as e:
+                logger.error(e)
+                logger.error(logger.error(traceback.format_exc()))
+                
+                time.sleep(30)
+                crawler(logger, driver, actions, driver.current_url, wait, dry_run)
 
             # Get page source
             html = driver.page_source
