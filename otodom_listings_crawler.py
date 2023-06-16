@@ -5,6 +5,7 @@ import os
 import re
 import sys
 import time
+import traceback
 
 import pandas as pd
 from bs4 import BeautifulSoup
@@ -239,8 +240,11 @@ def main(argv):
 
     if args.listing:
         listing_url = args.listing
-
-        do_single_listing(logger, listing_url, run, wait, dry_run)
+        try:
+            do_single_listing(logger, listing_url, run, wait, dry_run)
+        except Exception as e:
+            logger.error(e)
+            logger.error(traceback.format_exc())
 
     if args.file:
         listing_file = args.file
@@ -251,7 +255,11 @@ def main(argv):
         logger.info(f"{listings_count} listings found in file")
 
         for listing_url in listings:
-            do_single_listing(logger, listing_url, run, wait, dry_run)
+            try:
+                do_single_listing(logger, listing_url, run, wait, dry_run)
+            except Exception as e:
+                logger.error(e)
+                logger.error(traceback.format_exc())
 
         logger.info(f"{APP_NAME} finished")
 
