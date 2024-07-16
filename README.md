@@ -1,16 +1,16 @@
-# otodom-scrapper
-Welcome to `otodom-scrapper`!
+# otodom-scraper
+Welcome to `otodom-scraper`!
 
 ## Installation
 Recommended Python version is 3.9.10.
 
 First clone the repository.
 ```
-git clone git@github.com:kubzal/otodom-scrapper.git
+git clone git@github.com:kubzal/otodom-scraper.git
 ```
 Then enter the directory and create virtual environment. 
 ```
-cd otodom-scrapper
+cd otodom-scraper
 python -m venv env
 ```
 Then activate virual environment. 
@@ -52,26 +52,26 @@ Possible options
 otodom_listings_crawler.py [-h] (--listing LISTING | --file FILE) [--wait WAIT] --run [local | server] [--dry_run]
 ```
 
-## _otodom_offers_scrapper_
+## _otodom_offers_scraper_
 Option `--date` gets offers ids from PostgreSQL database for specified date, and gets offer params and save them into another table in database.
 
 Below there is an example how to use it.
 ```
-python otodom_offers_scrapper.py --date 2023-06-09
+python otodom_offers_scraper.py --date 2023-06-09
 ```
 
 You can also dry run script to estimate how long it would take.
 ```
-python otodom_offers_scrapper.py --date 2023-06-09 --dry_run
+python otodom_offers_scraper.py --date 2023-06-09 --dry_run
 ```
 
 Option `--url` gets offer params for the offer from URL.
 
 Below there is an example how to use it.
 ```
-python otodom_offers_scrapper.py --url "https://www.otodom.pl/pl/oferta/penthouse-z-tarasem-na-zoliborzu-ul-rydygiera-ID4lKUX"
+python otodom_offers_scraper.py --url "https://www.otodom.pl/pl/oferta/penthouse-z-tarasem-na-zoliborzu-ul-rydygiera-ID4lKUX"
 ```
 Possible options
 ```
- otodom_offers_scrapper.py [-h] (--date DATE | --url URL) [--wait WAIT] [--dry_run]
+ otodom_offers_scraper.py [-h] (--date DATE | --url URL) [--wait WAIT] [--dry_run]
 ```
